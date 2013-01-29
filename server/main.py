@@ -12,6 +12,7 @@ from google.appengine.api import xmpp
 from google.appengine.ext import db
 import webapp2
 
+import memcache_chunker
 import models
 import util
 
@@ -46,6 +47,9 @@ class BaseHandler(webapp2.RequestHandler):
       try:
         user = oauth.get_current_user()
         logging.debug('User authenticated via OAuth token: ' + user.email())
+      except oauth.InvalidOAuthTokenError:
+        logging.info('User provided an invalid OAuth token')
+        self.abort(401, explanation='Invalid OAuth token')
       except oauth.InvalidOAuthParametersError:
         pass
     if not user:
@@ -86,12 +90,12 @@ class PortalsHandler(BaseHandler):
         memcache.set(key, portals_json)
     else:
       key = 'portals'
-      portals_json = memcache.get(key)
+      portals_json = memcache_chunker.get(key)
       if not portals_json:
         logging.info('Pulling portals from datastore')
         portals_json = json.dumps(
             portals_query.run(batch_size=1000), cls=PortalJSONEncoder)
-        memcache.set('portals', portals_json)
+        memcache_chunker.set(key, portals_json)
     self.response.out.write(")]}',\n" + portals_json)
 
 
@@ -105,7 +109,13 @@ class PortalHandler(BaseHandler):
       kwargs['address'] = util.lookup_address(lat, lng)
     portal, created = models.Portal.get_or_insert(added_by=self.user, **kwargs)
     if created:
-      memcache.delete('portals')
+      # Add it to the cached JSON list of all portals.
+      portals_json = memcache_chunker.get('portals')
+      if portals_json is not None:
+        portals = json.loads(portals_json)
+        portals.append(portal)
+        memcache_chunker.set('portals', json.dumps(
+            portals, cls=PortalJSONEncoder))
     if kwargs.get('watched'):
       xmpp.send_invite(self.user.email)
       if self.user.key() not in portal.subscribers:
@@ -131,5 +141,5 @@ class PortalHandler(BaseHandler):
 
 APP = webapp2.WSGIApplication([
     (r'/portals', PortalsHandler),
-    (r'/portals/(\d+),(-?\d+)', PortalHandler),
+    (r'/portals/(-?\d+),(-?\d+)', PortalHandler),
 ])
