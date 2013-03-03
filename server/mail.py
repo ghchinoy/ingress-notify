@@ -11,7 +11,7 @@ import webapp2
 
 import models
 
-CONFIRMATION_RE = re.compile(r'(http.*%40ingress-notify\.appspotmail\.com.*)')
+CONFIRMATION_RE = re.compile(r'(http.*%40ingress-notify-co\.appspotmail\.com.*)')
 LATITUDE_RE = re.compile(r'latE6=(-?\d+)')
 LONGITUDE_RE = re.compile(r'lngE6=(-?\d+)')
 PORTAL_URL_RE = re.compile(r'"(http://www.ingress.com/intel.*?)"')

@@ -1,5 +1,5 @@
 {
-  "name": "Ingress Notifier",
+  "name": "Ingress Notifier (CO)",
   "version": "1.0.10",
   "manifest_version": 2,
   "description": "Extended notification functionality for Ingress.",
@@ -12,7 +12,7 @@
   },
   "permissions": [
     "tabs",
-    "https://ingress-notify.appspot.com/*"
+    "https://ingress-notify-co.appspot.com/*"
   ],
   "icons": {
     "16": "icon16.png",
